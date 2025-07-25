@@ -240,96 +240,17 @@ Singularity.documentation = {
         `;
     },
 
-    getSecurityContent: function() {
-        const isRTL = Singularity.i18n.isRTL();
-        
-        return `
-            <div class="docs-section">
-                <h1 class="docs-title">${isRTL ? 'الأمان والحماية' : 'Security & Protection'}</h1>
-                
-                <div class="docs-subsection">
-                    <h2>${isRTL ? 'التشفير المستخدم' : 'Encryption Used'}</h2>
-                    <p>
-                        ${isRTL ? 
-                            'سينجولاريتي يستخدم أقوى معايير التشفير المتاحة لحماية بياناتك:' :
-                            'Singularity uses the strongest available encryption standards to protect your data:'
-                        }
-                    </p>
-                    
-                    <div class="security-feature">
-                        <h3><i class="fas fa-shield-alt"></i> AES-256-GCM</h3>
-                        <p>
-                            ${isRTL ? 
-                                'خوارزمية التشفير المتماثل الأقوى والأكثر أماناً، المستخدمة من قبل الحكومات والمؤسسات المالية.' :
-                                'The strongest and most secure symmetric encryption algorithm, used by governments and financial institutions.'
-                            }
-                        </p>
-                    </div>
-                    
-                    <div class="security-feature">
-                        <h3><i class="fas fa-key"></i> PBKDF2</h3>
-                        <p>
-                            ${isRTL ? 
-                                'اشتقاق المفاتيح باستخدام 100,000 تكرار لحماية كلمة المرور من هجمات القوة الغاشمة.' :
-                                'Key derivation using 100,000 iterations to protect the password from brute force attacks.'
-                            }
-                        </p>
-                    </div>
-                    
-                    <div class="security-feature">
-                        <h3><i class="fas fa-random"></i> ${isRTL ? 'الملح العشوائي' : 'Random Salt'}</h3>
-                        <p>
-                            ${isRTL ? 
-                                'كل مستخدم يحصل على ملح عشوائي فريد لضمان عدم إمكانية استخدام هجمات القاموس.' :
-                                'Each user gets a unique random salt to ensure dictionary attacks cannot be used.'
-                            }
-                        </p>
-                    </div>
-                </div>
-
-                <div class="docs-subsection">
-                    <h2>${isRTL ? 'أفضل الممارسات الأمنية' : 'Security Best Practices'}</h2>
-                    
-                    <div class="security-tip">
-                        <h3><i class="fas fa-lock"></i> ${isRTL ? 'كلمة المرور الرئيسية' : 'Master Password'}</h3>
-                        <ul class="docs-list">
-                            <li>${isRTL ? 'استخدم كلمة مرور قوية لا تقل عن 12 حرف' : 'Use a strong password of at least 12 characters'}</li>
-                            <li>${isRTL ? 'امزج بين الأحرف الكبيرة والصغيرة والأرقام والرموز' : 'Mix uppercase, lowercase, numbers, and symbols'}</li>
-                            <li>${isRTL ? 'لا تستخدم معلومات شخصية يمكن تخمينها' : 'Don\'t use guessable personal information'}</li>
-                            <li>${isRTL ? 'لا تشارك كلمة المرور مع أي شخص' : 'Never share your password with anyone'}</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="security-tip">
-                        <h3><i class="fas fa-hdd"></i> ${isRTL ? 'النسخ الاحتياطية' : 'Backups'}</h3>
-                        <ul class="docs-list">
-                            <li>${isRTL ? 'قم بعمل نسخة احتياطية بانتظام' : 'Create backups regularly'}</li>
-                            <li>${isRTL ? 'احفظ النسخ الاحتياطية في مكان آمن' : 'Store backups in a secure location'}</li>
-                            <li>${isRTL ? 'اختبر النسخ الاحتياطية للتأكد من صحتها' : 'Test backups to ensure they work'}</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="security-tip">
-                        <h3><i class="fas fa-desktop"></i> ${isRTL ? 'أمان الجهاز' : 'Device Security'}</h3>
-                        <ul class="docs-list">
-                            <li>${isRTL ? 'استخدم جهاز آمن وموثوق' : 'Use a secure and trusted device'}</li>
-                            <li>${isRTL ? 'تأكد من تحديث المتصفح والنظام' : 'Keep your browser and system updated'}</li>
-                            <li>${isRTL ? 'لا تستخدم أجهزة عامة للوصول للبيانات الحساسة' : 'Don\'t use public devices for sensitive data'}</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="docs-warning">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <strong>${isRTL ? 'تذكر:' : 'Remember:'}</strong>
-                    ${isRTL ? 
-                        'جميع بياناتك محفوظة محلياً على جهازك فقط. لا يتم إرسال أي معلومات إلى خوادم خارجية.' :
-                        'All your data is stored locally on your device only. No information is sent to external servers.'
-                    }
-                </div>
-            </div>
-        `;
-    },
+// Documentation Module - ES Module Version
+let container = null;
+async function init(mainContainer) {
+    container = mainContainer;
+    container.innerHTML = '<div class="docs-content">Documentation Placeholder</div>';
+}
+function destroy() {
+    if (container) container.innerHTML = '';
+    container = null;
+}
+export default { init, destroy };
 
     getTroubleshootingContent: function() {
         const isRTL = Singularity.i18n.isRTL();

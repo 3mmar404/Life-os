@@ -872,16 +872,6 @@ legend {
         max-width: calc(100vw - 2rem);
     }
 }
-    
-    .search-filters {
-        flex-direction: column;
-    }
-    
-    .modal-content {
-        padding: 1.5rem;
-        margin: 1rem;
-    }
-}
 
 /* Utilities */
 .spinner {

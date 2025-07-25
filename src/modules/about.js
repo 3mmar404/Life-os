@@ -1,32 +1,20 @@
-// Singularity - About Module v1.0
 // Professional about page for commercial version
 
-if (!Singularity) { var Singularity = {}; }
-
-Singularity.about = {
-    load: function() {
-        this.renderLayout();
-    },
-
-    renderLayout: function() {
-        const container = document.getElementById('about');
-        const isRTL = Singularity.i18n.isRTL();
-        
-        container.innerHTML = `
-            <div class="about-container">
-                <!-- Hero Section -->
-                <div class="about-hero">
-                    <div class="hero-content">
-                        <div class="hero-icon">
-                            <i class="fas fa-shield-alt"></i>
-                        </div>
-                        <h1 class="hero-title" data-i18n="aboutTitle">${Singularity.i18n.t('aboutTitle')}</h1>
-                        <p class="hero-subtitle" data-i18n="appTagline">${Singularity.i18n.t('appTagline')}</p>
-                        <div class="hero-version">
-                            <span data-i18n="version">${Singularity.i18n.t('version')}</span> 4.0 Professional
-                        </div>
-                    </div>
-                </div>
+// About Module - ES Module Version
+let container = null;
+function renderLayout() {
+    if (!container) return;
+    container.innerHTML = '<div class="about-hero">About Page</div>';
+}
+async function init(mainContainer) {
+    container = mainContainer;
+    renderLayout();
+}
+function destroy() {
+    if (container) container.innerHTML = '';
+    container = null;
+}
+export default { init, destroy };
 
                 <!-- Description Section -->
                 <div class="about-section">

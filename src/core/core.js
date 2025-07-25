@@ -22,6 +22,23 @@ Singularity.core = {
         }
     },
 
+    // State helpers for modules (بدون import/export)
+    getState: function() {
+        return this.state.data;
+    },
+    updateState: function(newState) {
+        this.state.data = { ...this.state.data, ...newState };
+        if (this._listeners) this._listeners.forEach(fn => fn());
+    },
+    subscribe: function(fn) {
+        if (!this._listeners) this._listeners = [];
+        this._listeners.push(fn);
+        return () => {
+            const idx = this._listeners.indexOf(fn);
+            if (idx > -1) this._listeners.splice(idx, 1);
+        };
+    },
+
     // Initialize the application
     init: async function() {
         console.log('🚀 Singularity v4.0 Starting...');
