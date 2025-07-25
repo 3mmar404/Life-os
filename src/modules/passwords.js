@@ -1,5 +1,6 @@
 // Singularity - Passwords Module v3.0 (IRIS Project - Complete)
 if (!Singularity) { var Singularity = {}; }
+import { getState, updateState, subscribe } from '../core/state.js';
 
 Singularity.passwords = {
     currentFilter: 'all',
@@ -7,6 +8,8 @@ Singularity.passwords = {
 
     load: function() {
         this.renderLayout();
+        // عند أي تغيير في الحالة، أعد رسم الشبكة
+        subscribe(() => this.renderGrid());
         this.renderGrid();
     },
 
@@ -43,8 +46,8 @@ Singularity.passwords = {
         const grid = document.getElementById('passwords-grid');
         const emptyMsg = document.getElementById('passwords-empty');
         grid.innerHTML = '';
-        const data = this.getFilteredData();
-        if (data.length === 0) {
+        const data = getState().passwords;
+        if (!data || data.length === 0) {
             grid.style.display = 'none';
             emptyMsg.style.display = 'block';
         } else {
@@ -64,7 +67,7 @@ Singularity.passwords = {
                 if (event.target.closest('.btn-danger')) {
                     this.delete(id);
                 } else if (event.target.closest('.fa-edit')) {
-                    const item = Singularity.core.state.data.passwords.find(p => p.id === id);
+                    const item = getState().passwords.find(p => p.id === id);
                     this.showForm(item);
                 } else if (event.target.closest('.fa-user-tag')) {
                     this.copyUsername(id);
@@ -136,8 +139,22 @@ Singularity.passwords = {
             e.preventDefault();
             const formData = new FormData(form);
             const newItem = { id: isEdit ? item.id : Singularity.core.generateId(), platform: formData.get('platform'), username: formData.get('username'), password: formData.get('password'), tags: formData.get('tags').split(',').map(t => t.trim()).filter(Boolean), created: isEdit ? (item.created || Date.now()) : Date.now(), updated: Date.now() };
-            if (isEdit) { const index = Singularity.core.state.data.passwords.findIndex(p => p.id === item.id); if (index > -1) Singularity.core.state.data.passwords[index] = newItem; } else { Singularity.core.state.data.passwords.unshift(newItem); }
-            await Singularity.core.saveData(); Singularity.ui.closeModal(); Singularity.ui.showToast(isEdit ? 'تم تحديث الحساب' : 'تم إضافة الحساب', 'success'); this.renderGrid(); Singularity.dashboard.load();
+            let updatedPasswords;
+            if (isEdit) {
+                updatedPasswords = getState().passwords.map(p => p.id === item.id ? newItem : p);
+            } else {
+                updatedPasswords = [newItem, ...getState().passwords];
+            }
+            updateState({ passwords: updatedPasswords });
+            // تحديث قاعدة البيانات
+            if (isEdit) {
+                await db.passwords.put(newItem);
+            } else {
+                await db.passwords.add(newItem);
+            }
+            Singularity.ui.closeModal();
+            Singularity.ui.showToast(isEdit ? 'تم تحديث الحساب' : 'تم إضافة الحساب', 'success');
+            Singularity.dashboard.load();
         });
         Singularity.ui.showModal(isEdit ? 'تعديل الحساب' : 'إضافة حساب جديد', form);
     },
@@ -148,11 +165,10 @@ Singularity.passwords = {
     delete: async function(id) { if (confirm('هل أنت متأكد من حذف هذا الحساب؟')) { Singularity.core.state.data.passwords = Singularity.core.state.data.passwords.filter(p => p.id !== id); await Singularity.core.saveData(); Singularity.ui.showToast('تم حذف الحساب', 'success'); this.renderGrid(); Singularity.dashboard.load(); } },
     delete: async function(id) {
         if (confirm('هل أنت متأكد من حذف هذا الحساب؟')) {
+            const updatedPasswords = getState().passwords.filter(p => p.id !== id);
+            updateState({ passwords: updatedPasswords });
             await db.passwords.delete(id);
-            const passwords = await db.passwords.toArray();
-            Singularity.core.state.data.passwords = passwords;
             Singularity.ui.showToast('تم حذف الحساب', 'success');
-            this.renderGrid();
             Singularity.dashboard.load();
         }
     },

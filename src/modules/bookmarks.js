@@ -1,5 +1,7 @@
 // Singularity - Bookmarks Module v3.0 (IRIS Project - Complete)
 if (!Singularity) { var Singularity = {}; }
+import { getState, updateState, subscribe } from '../core/state.js';
+import { db } from '../core/db.js';
 
 Singularity.bookmarks = {
     currentFilter: 'all',
@@ -7,6 +9,7 @@ Singularity.bookmarks = {
 
     load: function() {
         this.renderLayout();
+        subscribe(() => this.renderGrid());
         this.renderGrid();
     },
 
@@ -47,20 +50,21 @@ Singularity.bookmarks = {
         const grid = document.getElementById('bookmarks-grid');
         const emptyMsg = document.getElementById('bookmarks-empty');
         grid.innerHTML = '';
-        const data = this.getFilteredData();
-        if (data.length === 0) {
+        const data = getState().bookmarks || [];
+        const filtered = this.getFilteredData(data);
+        if (filtered.length === 0) {
             grid.style.display = 'none';
             emptyMsg.style.display = 'block';
         } else {
             grid.style.display = 'grid';
             emptyMsg.style.display = 'none';
-            data.forEach(item => { grid.appendChild(this.createCard(item)); });
+            filtered.forEach(item => { grid.appendChild(this.createCard(item)); });
         }
         this.updateFilters();
     },
 
     getFilteredData: function() {
-        let data = Singularity.core.state.data.bookmarks;
+        let data = arguments[0] || getState().bookmarks;
         const query = this.searchQuery.toLowerCase();
         if (query) { data = data.filter(item => item.title?.toLowerCase().includes(query) || item.url?.toLowerCase().includes(query) || (item.categories || []).some(cat => cat.toLowerCase().includes(query))); }
         if (this.currentFilter !== 'all') { data = data.filter(item => (item.categories || []).includes(this.currentFilter)); }
@@ -115,14 +119,37 @@ Singularity.bookmarks = {
             e.preventDefault();
             const formData = new FormData(form);
             const newItem = { id: isEdit ? item.id : Singularity.core.generateId(), title: formData.get('title'), url: formData.get('url'), categories: formData.get('categories').split(',').map(c => c.trim()).filter(Boolean), created: isEdit ? (item.created || Date.now()) : Date.now(), updated: Date.now() };
-            if (isEdit) { const index = Singularity.core.state.data.bookmarks.findIndex(b => b.id === item.id); if (index > -1) Singularity.core.state.data.bookmarks[index] = newItem; } else { Singularity.core.state.data.bookmarks.unshift(newItem); }
-            await Singularity.core.saveData(); Singularity.ui.closeModal(); Singularity.ui.showToast(isEdit ? 'تم تحديث الرابط' : 'تم إضافة الرابط', 'success'); this.renderGrid(); Singularity.dashboard.load();
+            let updatedBookmarks;
+            if (isEdit) {
+                updatedBookmarks = getState().bookmarks.map(b => b.id === item.id ? newItem : b);
+            } else {
+                updatedBookmarks = [newItem, ...getState().bookmarks];
+            }
+            updateState({ bookmarks: updatedBookmarks });
+            // تحديث قاعدة البيانات
+            if (isEdit) {
+                await db.bookmarks.put(newItem);
+            } else {
+                await db.bookmarks.add(newItem);
+            }
+            Singularity.ui.closeModal();
+            Singularity.ui.showToast(isEdit ? 'تم تحديث الرابط' : 'تم إضافة الرابط', 'success');
+            Singularity.dashboard.load();
         });
         Singularity.ui.showModal(isEdit ? 'تعديل الرابط' : 'إضافة رابط', form);
     },
     
     copyUrl: function(id) { const i = Singularity.core.state.data.bookmarks.find(b => b.id === id); if (i) navigator.clipboard.writeText(i.url).then(() => Singularity.ui.showToast('تم نسخ الرابط')).catch(() => Singularity.ui.showToast('فشل النسخ', 'error')); },
     delete: async function(id) { if (confirm('هل أنت متأكد من حذف هذا الرابط؟')) { Singularity.core.state.data.bookmarks = Singularity.core.state.data.bookmarks.filter(b => b.id !== id); await Singularity.core.saveData(); Singularity.ui.showToast('تم حذف الرابط', 'success'); this.renderGrid(); Singularity.dashboard.load(); } },
+    delete: async function(id) {
+        if (confirm('هل أنت متأكد من حذف هذا الرابط؟')) {
+            const updatedBookmarks = getState().bookmarks.filter(b => b.id !== id);
+            updateState({ bookmarks: updatedBookmarks });
+            await db.bookmarks.delete(id);
+            Singularity.ui.showToast('تم حذف الرابط', 'success');
+            Singularity.dashboard.load();
+        }
+    },
     updateFilters: function() { const container = document.getElementById('bookmarks-filters'); container.innerHTML = ''; const allTags = new Set(Singularity.core.state.data.bookmarks.flatMap(item => item.categories || [])); const createTag = (tag) => { const tagEl = document.createElement('div'); tagEl.className = `filter-tag ${tag === this.currentFilter ? 'active' : ''}`; tagEl.dataset.filter = tag; tagEl.textContent = tag === 'all' ? 'الكل' : tag; tagEl.addEventListener('click', () => { this.currentFilter = tag; this.renderGrid(); }); return tagEl; }; container.appendChild(createTag('all')); allTags.forEach(tag => container.appendChild(createTag(tag))); },
 
     handleExternalImport: function(file) { if (!file) return; const reader = new FileReader(); reader.onload = async (e) => { try { let parsedData = []; if (file.name.endsWith('.json')) { parsedData = this.parseJSON(e.target.result); } else if (file.name.endsWith('.html')) { parsedData = this.parseHTML(e.target.result); } if (parsedData.length === 0) { Singularity.ui.showToast('لم يتم العثور على روابط صالحة في الملف', 'warning'); return; } const confirmed = await this.showImportConfirmation(parsedData); if (confirmed) { this.mergeImportedData(parsedData); await Singularity.core.saveData(); Singularity.ui.showToast(`تم دمج ${parsedData.length} رابط بنجاح`, 'success'); this.renderGrid(); Singularity.dashboard.load(); } } catch (error) { console.error("External import failed:", error); Singularity.ui.showToast('فشل في معالجة الملف', 'error'); } }; reader.readAsText(file); },

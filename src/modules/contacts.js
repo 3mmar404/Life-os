@@ -1,10 +1,17 @@
 // Singularity - Contacts Module v6.0 (Project PHOENIX - High-Fidelity & Tactical UI)
 if (!Singularity) { var Singularity = {}; }
+import { getState, updateState, subscribe } from '../core/state.js';
+import { db } from '../core/db.js';
 
 Singularity.contacts = {
     currentFilter: 'all', searchQuery: '', viewMode: 'dossier', // dossier or list
     
     load: function() { this.renderLayout(); this.renderGrid(); },
+    load: function() {
+        this.renderLayout();
+        subscribe(() => this.renderGrid());
+        this.renderGrid();
+    },
     
     renderLayout: function() {
         const container = document.getElementById('contacts');
@@ -70,19 +77,42 @@ Singularity.contacts = {
     },
     
     renderGrid: function() {
-        const grid = document.getElementById('contacts-grid'); const emptyMsg = document.getElementById('contacts-empty');
-        grid.innerHTML = ''; const data = this.getFilteredData();
-        if (data.length === 0) { grid.style.display = 'none'; emptyMsg.style.display = 'block'; }
-        else {
-            grid.style.display = this.viewMode === 'list' ? 'flex' : 'grid'; emptyMsg.style.display = 'none';
-            data.forEach(item => {
+        const grid = document.getElementById('contacts-grid');
+        const emptyMsg = document.getElementById('contacts-empty');
+        grid.innerHTML = '';
+        const data = getState().contacts || [];
+        const filtered = this.getFilteredData(data);
+        if (filtered.length === 0) {
+            grid.style.display = 'none';
+            emptyMsg.style.display = 'block';
+        } else {
+            grid.style.display = this.viewMode === 'list' ? 'flex' : 'grid';
+            emptyMsg.style.display = 'none';
+            filtered.forEach(item => {
                 const element = (this.viewMode === 'dossier') ? this.createCard(item) : this.createListItem(item);
                 grid.appendChild(element);
             });
-        } this.updateFilters();
+        }
+        this.updateFilters();
     },
 
     getFilteredData: function() { let data = Singularity.core.state.data.contacts; const query = this.searchQuery.toLowerCase(); if (query) { data = data.filter(item => Object.values(item).some(val => typeof val === 'string' && val.toLowerCase().includes(query)) || (item.organization && Object.values(item.organization).some(val => val.toLowerCase().includes(query))) || (item.phones || []).some(p => p.value.toLowerCase().includes(query)) || (item.emails || []).some(e => e.value.toLowerCase().includes(query))); } if (this.currentFilter !== 'all') { data = data.filter(item => (item.labels || []).includes(this.currentFilter)); } return data.sort((a,b) => a.name.localeCompare(b.name, 'ar')); },
+    getFilteredData: function(data) {
+        data = data || getState().contacts;
+        const query = this.searchQuery.toLowerCase();
+        if (query) {
+            data = data.filter(item =>
+                Object.values(item).some(val => typeof val === 'string' && val.toLowerCase().includes(query)) ||
+                (item.organization && Object.values(item.organization).some(val => val && val.toLowerCase().includes(query))) ||
+                (item.phones || []).some(p => p.value && p.value.toLowerCase().includes(query)) ||
+                (item.emails || []).some(e => e.value && e.value.toLowerCase().includes(query))
+            );
+        }
+        if (this.currentFilter !== 'all') {
+            data = data.filter(item => (item.labels || []).includes(this.currentFilter));
+        }
+        return data.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+    },
 
     createCard: function(item) {
         const card = document.createElement('div'); card.className = 'data-card';
@@ -144,18 +174,67 @@ Singularity.contacts = {
         form.querySelector('.add-phone-btn').onclick = ()=>createField('phone', form.querySelector('#phone-fields-container')); form.querySelector('.add-email-btn').onclick = ()=>createField('email', form.querySelector('#email-fields-container')); form.querySelector('.add-website-btn').onclick=()=>createField('website', form.querySelector('#website-fields-container'));
         form.querySelector('#photo-input').onchange = (e) => { const file = e.target.files[0]; if(!file)return; const reader=new FileReader();reader.onload=()=>form.querySelector('#photo-preview').src=reader.result;reader.readAsDataURL(file); };
         if(isEdit){form.name.value=item.name||'';form.nickname.value=item.nickname||'';form.birthday.value=item.birthday||'';form.org_name.value=item.organization?.name||'';form.org_title.value=item.organization?.title||'';if(item.photo)form.querySelector('#photo-preview').src=item.photo;(item.phones||[]).forEach(p=>createField('phone',form.querySelector('#phone-fields-container'),p));(item.emails||[]).forEach(e=>createField('email',form.querySelector('#email-fields-container'),e));(item.websites||[]).forEach(w=>createField('website',form.querySelector('#website-fields-container'),w));form.notes.value=item.notes||'';form.labels.value=(item.labels||[]).join(', ');}
-        form.addEventListener('submit', async (e)=>{
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const getFieldsData = (t, c)=>{const d=[]; const ls=c.querySelectorAll(`[name=${t}_label]`); const vs=c.querySelectorAll(`[name=${t}_value]`); for(let i=0;i<vs.length;i++){if(vs[i].value)d.push({label:ls[i].value,value:vs[i].value});}return d;};
-            let photoData=isEdit?item.photo:null; const photoInput=form.querySelector('#photo-input'); if(photoInput.files[0]){photoData=await this._compressImage(photoInput.files[0]);}
-            const newItem={id:isEdit?item.id:Singularity.core.generateId(), name:form.name.value, nickname:form.nickname.value, birthday:form.birthday.value, organization:{name:form.org_name.value,title:form.org_title.value}, phones: getFieldsData('phone',form.querySelector('#phone-fields-container')), emails:getFieldsData('email',form.querySelector('#email-fields-container')), websites:getFieldsData('website',form.querySelector('#website-fields-container')), notes:form.notes.value, photo:photoData, labels:form.labels.value.split(',').map(l=>l.trim()).filter(Boolean), created:isEdit?(item.created||Date.now()):Date.now(), updated:Date.now()};
-            if(isEdit){const idx=Singularity.core.state.data.contacts.findIndex(c=>c.id===item.id);if(idx>-1)Singularity.core.state.data.contacts[idx]=newItem;}else{Singularity.core.state.data.contacts.unshift(newItem);}
-            await Singularity.core.saveData();Singularity.ui.closeModal();Singularity.ui.showToast(isEdit?'تم تحديث الملف':'تم إضافة الملف','success');this.renderGrid();Singularity.dashboard.load();
+            const getFieldsData = (t, c) => {
+                const d = [];
+                const ls = c.querySelectorAll(`[name=${t}_label]`);
+                const vs = c.querySelectorAll(`[name=${t}_value]`);
+                for (let i = 0; i < vs.length; i++) {
+                    if (vs[i].value) d.push({ label: ls[i].value, value: vs[i].value });
+                }
+                return d;
+            };
+            let photoData = isEdit ? item.photo : null;
+            const photoInput = form.querySelector('#photo-input');
+            if (photoInput.files[0]) {
+                photoData = await this._compressImage(photoInput.files[0]);
+            }
+            const newItem = {
+                id: isEdit ? item.id : Singularity.core.generateId(),
+                name: form.name.value,
+                nickname: form.nickname.value,
+                birthday: form.birthday.value,
+                organization: { name: form.org_name.value, title: form.org_title.value },
+                phones: getFieldsData('phone', form.querySelector('#phone-fields-container')),
+                emails: getFieldsData('email', form.querySelector('#email-fields-container')),
+                websites: getFieldsData('website', form.querySelector('#website-fields-container')),
+                notes: form.notes.value,
+                photo: photoData,
+                labels: form.labels.value.split(',').map(l => l.trim()).filter(Boolean),
+                created: isEdit ? (item.created || Date.now()) : Date.now(),
+                updated: Date.now()
+            };
+            let updatedContacts;
+            if (isEdit) {
+                updatedContacts = getState().contacts.map(c => c.id === item.id ? newItem : c);
+            } else {
+                updatedContacts = [newItem, ...getState().contacts];
+            }
+            updateState({ contacts: updatedContacts });
+            // تحديث قاعدة البيانات
+            if (isEdit) {
+                await db.contacts.put(newItem);
+            } else {
+                await db.contacts.add(newItem);
+            }
+            Singularity.ui.closeModal();
+            Singularity.ui.showToast(isEdit ? 'تم تحديث الملف' : 'تم إضافة الملف', 'success');
+            Singularity.dashboard.load();
         });
         Singularity.ui.showModal(isEdit ? 'تعديل الملف' : 'إضافة ملف جديد', form);
     },
 
     delete: async function(id) { if(confirm('هل أنت متأكد من حذف هذا الملف؟')){ Singularity.core.state.data.contacts=Singularity.core.state.data.contacts.filter(c=>c.id!==id);await Singularity.core.saveData();Singularity.ui.showToast('تم حذف الملف','success');this.renderGrid();Singularity.dashboard.load();}},
+    delete: async function(id) {
+        if (confirm('هل أنت متأكد من حذف هذا الملف؟')) {
+            const updatedContacts = getState().contacts.filter(c => c.id !== id);
+            updateState({ contacts: updatedContacts });
+            await db.contacts.delete(id);
+            Singularity.ui.showToast('تم حذف الملف', 'success');
+            Singularity.dashboard.load();
+        }
+    },
     updateFilters: function() { const c=document.getElementById('contacts-filters'); c.innerHTML=''; const allTags=new Set(Singularity.core.state.data.contacts.flatMap(i=>i.labels||[])); const createTag=tag=>{const t=document.createElement('div');t.className=`filter-tag ${tag===this.currentFilter?'active':''}`; t.dataset.filter=tag; t.textContent=tag==='all'?'الكل':tag; t.onclick=()=>{this.currentFilter=tag; this.renderGrid();}; return t;}; c.appendChild(createTag('all')); allTags.forEach(t=>c.appendChild(createTag(t)));},
     
     handleExternalImport: function(file) { if(!file)return;const r=new FileReader();r.onload=async e=>{try{const d=this.parseGoogleCSV(e.target.result);if(d.length===0){Singularity.ui.showToast('لم يتم العثور على بيانات صالحة','warning');return;} const confirmed=await this.showImportConfirmation(d); if(confirmed){this.mergeImportedData(d);await Singularity.core.saveData();Singularity.ui.showToast(`تم دمج ${d.length} ملف بنجاح`,'success');this.renderGrid();Singularity.dashboard.load();}}catch(err){console.error("Import failed:",err);Singularity.ui.showToast('فشل معالجة الملف','error');}};r.readAsText(file,'UTF-8');},
