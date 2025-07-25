@@ -1,3 +1,48 @@
+/* عناصر تظهر فقط على الجوال */
+.mobile-only {
+    display: none;
+}
+
+/* زر إضافة عائم (FAB) */
+.fab {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: var(--accent-color);
+    color: white;
+    font-size: 2rem;
+    border: none;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    cursor: pointer;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, box-shadow 0.2s;
+}
+.fab:hover {
+    background: var(--accent-hover);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+@media (max-width: 768px) {
+    #category-filter-desktop {
+        display: none;
+    }
+    .mobile-only {
+        display: block;
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+    /* إخفاء أزرار الإضافة والاستيراد الأصلية في واجهة كلمات المرور */
+    #passwords .btn-success,
+    #passwords .import-btn {
+        display: none;
+    }
+}
 /* Singularity v4.0 - Modern CSS Framework */
 
 :root {
@@ -1547,4 +1592,3 @@ legend {
 *:focus-visible {
     outline: 2px solid rgba(102, 126, 234, 0.6);
     outline-offset: 2px;
-}

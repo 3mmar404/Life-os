@@ -50,9 +50,32 @@ Singularity.passwords = {
         } else {
             grid.style.display = 'grid';
             emptyMsg.style.display = 'none';
-            data.forEach(item => { grid.appendChild(this.createCard(item)); });
+            const fragment = document.createDocumentFragment();
+            data.forEach(item => { fragment.appendChild(this.createCard(item)); });
+            grid.appendChild(fragment);
         }
         this.updateFilters();
+        // Event Delegation for card actions
+        if (!grid._delegationBound) {
+            grid.addEventListener('click', (event) => {
+                const card = event.target.closest('.data-card');
+                if (!card) return;
+                const id = card.dataset.id;
+                if (event.target.closest('.btn-danger')) {
+                    this.delete(id);
+                } else if (event.target.closest('.fa-edit')) {
+                    const item = Singularity.core.state.data.passwords.find(p => p.id === id);
+                    this.showForm(item);
+                } else if (event.target.closest('.fa-user-tag')) {
+                    this.copyUsername(id);
+                } else if (event.target.closest('.fa-copy')) {
+                    this.copyPassword(id);
+                } else if (event.target.closest('.toggle-vis-btn')) {
+                    this.togglePassword(id, card.querySelector('.password-span'), card.querySelector('.toggle-vis-btn i'));
+                }
+            });
+            grid._delegationBound = true;
+        }
     },
 
     getFilteredData: function() {
@@ -72,28 +95,12 @@ Singularity.passwords = {
     },
 
     createCard: function(item) {
-        const card = document.createElement('div');
-        card.className = 'data-card';
-        card.innerHTML = `
-            <div class="card-content">
-                <div class="card-header">
-                    <i class="fas fa-shield-alt card-icon"></i>
-                    <div>
-                        <h3 class="card-title">${Singularity.core.sanitize(item.platform || '')}</h3>
-                        <span style="font-size:0.9rem; color:var(--text-secondary); direction:ltr; text-align:left; display:block;">${Singularity.core.sanitize(item.username || '')}</span>
-                    </div>
-                </div>
-                <div class="password-field" style="background:var(--secondary-color); padding:0.8rem; border-radius:6px; display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-                    <span class="password-span" style="font-family:monospace; user-select:none; color: var(--text-primary);">••••••••••</span>
-                    <div style="display:flex; gap:0.5rem;">
-                        <button title="إظهار/إخفاء" class="btn btn-small btn-secondary toggle-vis-btn"><i class="fas fa-eye"></i></button>
-                        <button title="نسخ كلمة المرور" class="btn btn-small btn-secondary copy-pass-btn"><i class="fas fa-copy"></i></button>
-                    </div>
-                </div>
-                <div class="tags-container" style="display:flex;gap:0.5rem;flex-wrap:wrap; margin-top:auto;"></div>
-            </div>
-            <div class="card-actions"></div>`;
-
+        const template = document.getElementById('password-card-template');
+        const cardFragment = template.content.cloneNode(true);
+        const card = cardFragment.querySelector('.data-card');
+        card.querySelector('.card-title').textContent = Singularity.core.sanitize(item.platform || '');
+        card.querySelector('.card-username').textContent = Singularity.core.sanitize(item.username || '');
+        // tags
         const tagsContainer = card.querySelector('.tags-container');
         (item.tags || []).forEach(tag => {
             const tagEl = document.createElement('span');
@@ -101,12 +108,15 @@ Singularity.passwords = {
             tagEl.textContent = tag;
             tagsContainer.appendChild(tagEl);
         });
-        
+        // actions
         card.querySelector('.toggle-vis-btn').onclick = () => this.togglePassword(item.id, card.querySelector('.password-span'), card.querySelector('.toggle-vis-btn i'));
         card.querySelector('.copy-pass-btn').onclick = () => this.copyPassword(item.id);
-        
         const actionsContainer = card.querySelector('.card-actions');
-        [{icon:'fa-user-tag', title:'نسخ اسم المستخدم', action:()=>this.copyUsername(item.id)}, {icon:'fa-edit', title:'تعديل', action:()=>this.showForm(item)}, {icon:'fa-trash', title:'حذف', action:()=>this.delete(item.id), danger:true}].forEach(b => {
+        [
+            {icon:'fa-user-tag', title:'نسخ اسم المستخدم', action:()=>this.copyUsername(item.id)},
+            {icon:'fa-edit', title:'تعديل', action:()=>this.showForm(item)},
+            {icon:'fa-trash', title:'حذف', action:()=>this.delete(item.id), danger:true}
+        ].forEach(b => {
             const btn = document.createElement('button');
             btn.className = `btn btn-small ${b.danger ? 'btn-danger' : 'btn-secondary'}`;
             btn.title = b.title;
@@ -136,6 +146,16 @@ Singularity.passwords = {
     copyPassword: function(id) { const i = Singularity.core.state.data.passwords.find(p=>p.id===id); if(i) navigator.clipboard.writeText(i.password).then(()=>Singularity.ui.showToast('تم نسخ كلمة المرور')).catch(()=>Singularity.ui.showToast('فشل النسخ','error')); },
     togglePassword: function(id, el, iconEl) { const i=Singularity.core.state.data.passwords.find(p=>p.id===id); if(i){if(el.textContent==='••••••••••'){el.textContent=i.password; el.style.color = 'var(--accent-hover)'; iconEl.className='fas fa-eye-slash';}else{el.textContent='••••••••••'; el.style.color = 'var(--text-primary)'; iconEl.className='fas fa-eye';}}},
     delete: async function(id) { if (confirm('هل أنت متأكد من حذف هذا الحساب؟')) { Singularity.core.state.data.passwords = Singularity.core.state.data.passwords.filter(p => p.id !== id); await Singularity.core.saveData(); Singularity.ui.showToast('تم حذف الحساب', 'success'); this.renderGrid(); Singularity.dashboard.load(); } },
+    delete: async function(id) {
+        if (confirm('هل أنت متأكد من حذف هذا الحساب؟')) {
+            await db.passwords.delete(id);
+            const passwords = await db.passwords.toArray();
+            Singularity.core.state.data.passwords = passwords;
+            Singularity.ui.showToast('تم حذف الحساب', 'success');
+            this.renderGrid();
+            Singularity.dashboard.load();
+        }
+    },
 
     updateFilters: function() { const container = document.getElementById('passwords-filters'); container.innerHTML = ''; const allTags = new Set(Singularity.core.state.data.passwords.flatMap(item => item.tags || [])); const createTag = (tag) => { const tagEl = document.createElement('div'); tagEl.className = `filter-tag ${tag === this.currentFilter ? 'active' : ''}`; tagEl.dataset.filter = tag; tagEl.textContent = tag === 'all' ? 'الكل' : tag; tagEl.addEventListener('click', () => { this.currentFilter = tag; this.renderGrid(); }); return tagEl; }; container.appendChild(createTag('all')); allTags.forEach(tag => container.appendChild(createTag(tag))); },
     

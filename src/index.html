@@ -42,7 +42,12 @@
         <!-- Navigation -->
         <nav class="main-nav">
             <div class="nav-container">
-                <div class="nav-tabs">
+                <!-- قائمة التصنيفات للجوال (تظهر فقط على الشاشات الصغيرة) -->
+                <select id="category-filter-mobile" class="mobile-only custom-select">
+                    <option value="all">الكل</option>
+                    <!-- سيتم ملء بقية التصنيفات ديناميكياً من جافاسكريبت -->
+                </select>
+                <div class="nav-tabs" id="category-filter-desktop">
                     <button class="nav-tab active" data-module="dashboard" data-lang-key="nav_dashboard">
                         <i class="fas fa-tachometer-alt"></i>
                         Dashboard
@@ -85,6 +90,31 @@
             <div id="about" class="module"></div>
             <div id="documentation" class="module"></div>
         </main>
+        <!-- قالب بطاقة كلمة المرور -->
+        <template id="password-card-template">
+            <div class="data-card">
+                <div class="card-content">
+                    <div class="card-header">
+                        <i class="fas fa-shield-alt card-icon"></i>
+                        <div>
+                            <h3 class="card-title"></h3>
+                            <span class="card-username" style="font-size:0.9rem; color:var(--text-secondary); direction:ltr; text-align:left; display:block;"></span>
+                        </div>
+                    </div>
+                    <div class="password-field" style="background:var(--secondary-color); padding:0.8rem; border-radius:6px; display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                        <span class="password-span" style="font-family:monospace; user-select:none; color: var(--text-primary);">••••••••••</span>
+                        <div style="display:flex; gap:0.5rem;">
+                            <button title="إظهار/إخفاء" class="btn btn-small btn-secondary toggle-vis-btn"><i class="fas fa-eye"></i></button>
+                            <button title="نسخ كلمة المرور" class="btn btn-small btn-secondary copy-pass-btn"><i class="fas fa-copy"></i></button>
+                        </div>
+                    </div>
+                    <div class="tags-container" style="display:flex;gap:0.5rem;flex-wrap:wrap; margin-top:auto;"></div>
+                </div>
+                <div class="card-actions"></div>
+            </div>
+        </template
+        <!-- زر إضافة عائم للجوال (FAB) -->
+        <button id="fab-add" class="fab mobile-only" title="إضافة جديد">+</button>
     </div>
 
     <!-- Modal -->
@@ -119,6 +149,9 @@
     <script src="modules/tools.js"></script>
     <script src="modules/about.js"></script>
     <script src="modules/documentation.js"></script>
+    <!-- Dexie.js CDN for IndexedDB support -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.mjs"></script>
+    <script type="module" src="core/db.js"></script>
     <script src="main.js"></script>
 </body>
 </html>

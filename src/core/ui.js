@@ -5,16 +5,31 @@ Singularity.ui = {
     init: function() {
         // Event listeners for static UI elements
         document.querySelector('.theme-toggle').addEventListener('click', this.toggleTheme.bind(this));
-        
+
         // Settings button navigation
         document.querySelector('.settings-btn').addEventListener('click', () => Singularity.router.navigate('tools'));
-        
+
         // Modal close on outside click
         document.getElementById('modal').addEventListener('click', (e) => {
             if (e.target === document.getElementById('modal')) {
                 this.closeModal();
             }
         });
+
+        // FAB (Floating Action Button) for mobile: Add new password
+        const fabAdd = document.getElementById('fab-add');
+        if (fabAdd) {
+            fabAdd.addEventListener('click', function() {
+                // انتقل إلى تبويب كلمات المرور إذا لم يكن نشطًا
+                Singularity.router.navigate('passwords');
+                // انتظر حتى يتم تحميل واجهة كلمات المرور ثم افتح نموذج الإضافة
+                setTimeout(function() {
+                    if (Singularity.passwords && typeof Singularity.passwords.showForm === 'function') {
+                        Singularity.passwords.showForm();
+                    }
+                }, 200);
+            });
+        }
 
         // Initialize language switcher and theme
         this.buildLangSwitcher();
