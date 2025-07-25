@@ -1,0 +1,107 @@
+
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Singularity ThemeCrafter</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎨</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Tajawal:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --crafter-bg: #161b22; --crafter-primary: #0d1117; --crafter-border: #30363d;
+            --crafter-text: #e6edf3; --crafter-text-secondary: #8b949e;
+            --crafter-accent: #58a6ff; --crafter-input-bg: #21262d;
+        }
+        body { font-family: 'IBM Plex Sans', sans-serif; background-color: var(--crafter-primary); color: var(--crafter-text); display: flex; height: 100vh; margin: 0; }
+        .controls { width: 380px; padding: 20px; background-color: var(--crafter-bg); overflow-y: auto; border-right: 1px solid var(--crafter-border); display: flex; flex-direction: column; }
+        .preview { flex: 1; padding: 20px; display:flex; flex-direction: column; }
+        iframe { width: 100%; height: 100%; border: 1px solid var(--crafter-border); background-color: #fff; border-radius: 8px; }
+        .control-group { margin-bottom: 25px; }
+        h1, h2, h3 { font-weight: 500; border-bottom: 1px solid var(--crafter-border); padding-bottom: 10px; margin-bottom: 15px; }
+        h1 { font-size: 1.8em; } h2 { font-size: 1.4em; } h3 { font-size: 1.1em; border-bottom: none; margin-bottom: 10px;}
+        .color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .color-item label { display: block; margin-bottom: 5px; color: var(--crafter-text-secondary); font-size: 0.9em; }
+        .color-item code { font-size: 0.8em; color: var(--crafter-text-secondary); opacity: 0.7; }
+        input[type="color"] { width: 100%; height: 40px; padding: 0; border: none; background: none; cursor: pointer; }
+        input[type="text"], input[type="file"] { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--crafter-border); background-color: var(--crafter-input-bg); color: var(--crafter-text); }
+        input[type="file"]::file-selector-button { background: #30363d; color: var(--crafter-text); border:none; padding: 8px; border-radius: 4px; margin-right: 10px;}
+        #logo-preview, #bg-preview { max-width: 100px; max-height: 100px; height: auto; background: var(--crafter-primary); margin-top: 10px; border-radius: 4px; display: none; }
+        button#exportBtn { background-color: var(--crafter-accent); color: var(--crafter-primary); border: none; padding: 12px 15px; border-radius: 6px; cursor: pointer; width: 100%; font-size: 1.1em; font-weight: 600; margin-top: auto; }
+        button#exportBtn:hover { filter: brightness(1.2); }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <h1>ThemeCrafter</h1>
+        <p style="font-size:0.9em; color:var(--crafter-text-secondary); margin-top:-10px; margin-bottom:20px;">Design your own Singularity theme.</p>
+
+        <div class="control-group">
+            <h3>Theme Identity</h3>
+            <label for="themeName">Theme Name:</label>
+            <input type="text" id="themeName" value="My Custom Theme">
+        </div>
+        
+        <div class="control-group">
+            <h3>Color Palette</h3>
+            <div class="color-grid">
+                <div class="color-item"><label for="bgColor">Background <code>--bg-color</code></label><input type="color" id="bgColor" data-var="--bg-color" value="#0d1117"></div>
+                <div class="color-item"><label for="primaryColor">Primary <code>--primary-color</code></label><input type="color" id="primaryColor" data-var="--primary-color" value="#161b22"></div>
+                <div class="color-item"><label for="accentColor">Accent <code>--accent-color</code></label><input type="color" id="accentColor" data-var="--accent-color" value="#58a6ff"></div>
+                <div class="color-item"><label for="textColor">Text <code>--text-primary</code></label><input type="color" id="textColor" data-var="--text-primary" value="#e6edf3"></div>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h3>Assets (Optional)</h3>
+            <label>Custom Logo (SVG or PNG)</label>
+            <input type="file" id="logoInput" accept="image/*">
+            <img id="logo-preview" alt="Logo Preview">
+        </div>
+        <div class="control-group">
+            <label>Custom Background</label>
+            <input type="file" id="bgInput" accept="image/*">
+            <img id="bg-preview" alt="Background Preview">
+        </div>
+
+        <button id="exportBtn">Export Theme File</button>
+    </div>
+
+    <div class="preview">
+        <h2>Live Preview</h2>
+        <iframe id="preview-frame"></iframe>
+    </div>
+
+    <script>
+        const state={themeName:"My Custom Theme", colors:{'--bg-color':'#0d1117','--primary-color':'#161b22','--accent-color':'#58a6ff','--text-primary':'#e6edf3', '--border-color':'#30363d'}, logo:null, background:null };
+        const iframe=document.getElementById('preview-frame');
+
+        function updatePreview(){
+            const cssVars=Object.entries(state.colors).map(([k,v])=>`${k}:${v};`).join('');
+            const bodyStyle=state.background?`background-image:url(${state.background});background-size:cover;background-position:center;`:'';
+            const logoEl=state.logo?`<img src="${state.logo}" style="height:30px">`:'Singularity';
+            iframe.srcdoc=`<html><head><style>:root{${cssVars}} body{padding:20px;font-family:"IBM Plex Sans",sans-serif;background-color:var(--bg-color);color:var(--text-primary);${bodyStyle}} .card{background-color:var(--primary-color);border:1px solid var(--border-color);padding:20px;border-radius:8px;margin-top:20px;} h1{color:var(--accent-color);font-size:1.5em} .header{display:flex;align-items:center;gap:10px;}</style></head><body><div class="header">${logoEl}<h1>${state.themeName}</h1></div><div class="card"><p>This is a sample card preview.</p><button style="background:var(--accent-color);color:var(--bg-color);border:none;padding:10px;border-radius:6px;margin-top:10px;">Action Button</button></div></body></html>`;
+        }
+        
+        document.querySelectorAll('input').forEach(i => {
+            i.addEventListener('input', e => {
+                const t=e.target;
+                if(t.type==='color'){state.colors[t.dataset.var]=t.value; if(t.dataset.var === '--primary-color'){state.colors['--border-color'] = C(t.value,20);}} // Auto-adjust border
+                else if(t.id==='themeName'){state.themeName=t.value;}
+                else if(t.type==='file'){
+                    const file = t.files[0], previewEl = document.getElementById(`${t.id.replace('Input','-preview')}`);
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload=ev=>{const dataUrl=ev.target.result;if(t.id==='logoInput'){state.logo=dataUrl;previewEl.style.display='block';previewEl.src=dataUrl;}else if(t.id==='bgInput'){state.background=dataUrl;previewEl.style.display='block';previewEl.src=dataUrl;} updatePreview();};
+                    reader.readAsDataURL(file);
+                }
+                updatePreview();
+            });
+        });
+        
+        document.getElementById('exportBtn').onclick=()=>{const j=JSON.stringify(state,null,2),b=new Blob([j],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=`${state.themeName.replace(/\s+/g,'-').toLowerCase()||'custom'}.s_theme`;a.click();URL.revokeObjectURL(u);};
+        const C=(c,a)=>{let p=1,i=parseInt(c.slice(1),16),t=a<0?(0-a)*p:-a*p,R=i>>16,G=i>>8&255,B=i&255;return'#'+(16777216+(R>255?255:R<0?0:R)+t<<16|(G>255?255:G<0?0:G)+t<<8|(B>255?255:B<0?0:B)+t).toString(16).slice(1)}; // Helper function to adjust color brightness
+        updatePreview();
+    </script>
+</body>
+</html>

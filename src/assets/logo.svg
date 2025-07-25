@@ -1,0 +1,36 @@
+<svg width="150" height="40" viewBox="0 0 150 40" xmlns="http://www.w3.org/2000/svg">
+  <!-- 
+    Singularity Official Logo SVG
+    Designed for clarity, scalability, and brand identity.
+    Copyright (c) 2024 Ahmed Amar
+  -->
+  <defs>
+    <linearGradient id="singularity-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color: var(--accent-color, #58a6ff); stop-opacity:1" />
+      <stop offset="100%" style="stop-color: var(--accent-hover, #3b82f6); stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Hexagon Shield Shape -->
+  <path 
+    d="M20 5 L35 12.5 V 27.5 L20 35 L5 27.5 V 12.5 Z M20 9 L31 15 V 25 L20 31 L9 25 V 15 Z" 
+    fill="url(#singularity-gradient)"
+  />
+
+  <!-- Inner Key Symbol -->
+  <path 
+    d="M16 19 L18 17 L22 17 L24 19 V 21 L22 23 L18 23 L16 21 Z" 
+    fill="var(--text-primary, #e6edf3)"
+  />
+  
+  <!-- Logotype -->
+  <text 
+    x="45" 
+    y="27" 
+    font-family="var(--font-family, 'IBM Plex Sans', sans-serif)" 
+    font-size="20" 
+    font-weight="600" 
+    fill="var(--text-primary, #e6edf3)">
+    Singularity
+  </text>
+</svg>
