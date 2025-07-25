@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Singularity v4.0 - Modern Edition</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Tajawal:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/themes/nightfall.css" id="theme-link">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <a href="#" class="app-logo" onclick="location.reload();">
+                    <i class="fas fa-shield-halved"></i>
+                    <span>Singularity</span>
+                </a>
+                <div class="header-actions">
+                    <div id="lang-switcher" class="lang-switcher"></div>
+                    <button class="theme-toggle" title="تبديل الثيم">
+                        <i class="fas fa-palette"></i>
+                    </button>
+                    <button class="settings-btn" title="الإعدادات/الأدوات">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="main-nav">
+            <div class="nav-container">
+                <!-- قائمة التصنيفات للجوال (تظهر فقط على الشاشات الصغيرة) -->
+                <select id="category-filter-mobile" class="mobile-only custom-select">
+                    <option value="all">الكل</option>
+                    <!-- سيتم ملء بقية التصنيفات ديناميكياً من جافاسكريبت -->
+                </select>
+                <div class="nav-tabs" id="category-filter-desktop">
+                    <button class="nav-tab active" data-module="dashboard" data-lang-key="nav_dashboard">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Dashboard
+                    </button>
+                    <button class="nav-tab" data-module="passwords" data-lang-key="nav_passwords">
+                        <i class="fas fa-key"></i>
+                        Passwords
+                    </button>
+                    <button class="nav-tab" data-module="contacts" data-lang-key="nav_contacts">
+                        <i class="fas fa-address-book"></i>
+                        Contacts
+                    </button>
+                    <button class="nav-tab" data-module="bookmarks" data-lang-key="nav_bookmarks">
+                        <i class="fas fa-bookmark"></i>
+                        Bookmarks
+                    </button>
+                    <button class="nav-tab" data-module="tools" data-lang-key="nav_tools">
+                        <i class="fas fa-tools"></i>
+                        Tools
+                    </button>
+                    <button class="nav-tab" data-module="about" data-lang-key="nav_about">
+                        <i class="fas fa-info-circle"></i>
+                        About
+                    </button>
+                    <button class="nav-tab" data-module="documentation" data-lang-key="nav_documentation">
+                        <i class="fas fa-book"></i>
+                        Documentation
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div id="dashboard" class="module active"></div>
+            <div id="passwords" class="module"></div>
+            <div id="contacts" class="module"></div>
+            <div id="bookmarks" class="module"></div>
+            <div id="tools" class="module"></div>
+            <div id="about" class="module"></div>
+            <div id="documentation" class="module"></div>
+        </main>
+        <!-- قالب بطاقة كلمة المرور -->
+        <template id="password-card-template">
+            <div class="data-card">
+                <div class="card-content">
+                    <div class="card-header">
+                        <i class="fas fa-shield-alt card-icon"></i>
+                        <div>
+                            <h3 class="card-title"></h3>
+                            <span class="card-username" style="font-size:0.9rem; color:var(--text-secondary); direction:ltr; text-align:left; display:block;"></span>
+                        </div>
+                    </div>
+                    <div class="password-field" style="background:var(--secondary-color); padding:0.8rem; border-radius:6px; display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                        <span class="password-span" style="font-family:monospace; user-select:none; color: var(--text-primary);">••••••••••</span>
+                        <div style="display:flex; gap:0.5rem;">
+                            <button title="إظهار/إخفاء" class="btn btn-small btn-secondary toggle-vis-btn"><i class="fas fa-eye"></i></button>
+                            <button title="نسخ كلمة المرور" class="btn btn-small btn-secondary copy-pass-btn"><i class="fas fa-copy"></i></button>
+                        </div>
+                    </div>
+                    <div class="tags-container" style="display:flex;gap:0.5rem;flex-wrap:wrap; margin-top:auto;"></div>
+                </div>
+                <div class="card-actions"></div>
+            </div>
+        </template
+        <!-- زر إضافة عائم للجوال (FAB) -->
+        <button id="fab-add" class="fab mobile-only" title="إضافة جديد">+</button>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title"></h2>
+                <button class="modal-close" onclick="Singularity.ui.closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast">
+        <div class="toast-message"></div>
+    </div>
+
+    <!-- JAVASCRIPT FILES (ORDER IS CRITICAL) -->
+    <script src="lang/strings.js"></script>
+    <script src="core/i18n.js"></script>
+    <script src="core/security.js"></script>
+    <script src="core/core.js"></script>
+    <script src="core/ui.js"></script>
+    <script src="core/router.js"></script>
+    <script src="modules/dashboard.js"></script>
+    <script src="modules/passwords.js"></script>
+    <script src="modules/contacts.js"></script>
+    <script src="modules/bookmarks.js"></script>
+    <script src="modules/tools.js"></script>
+    <script src="modules/about.js"></script>
+    <script src="modules/documentation.js"></script>
+    <!-- Dexie.js CDN for IndexedDB support -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.mjs"></script>
+    <script type="module" src="core/db.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
